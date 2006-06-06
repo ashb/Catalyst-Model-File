@@ -65,14 +65,11 @@ for my $file (@files) {
     is($file, $file_obj->slurp, "contents are right");
 }
 
-use Data::Dumper;
-print Dumper $model->list(recurse => 0, mode => 'both');
-
 is_deeply([
+    Path::Class::file('file3'),
     Path::Class::file('foo1'),
     Path::Class::file('foo2'),
-    Path::Class::file('file3'),
     Path::Class::dir('sub'),
-,], [$model->list(recurse => 0, mode => 'both')], "List without recurse is right");
+,], [sort $model->list(recurse => 0, mode => 'both')], "List without recurse is right");
 
 $model->{root_dir}->rmtree;
