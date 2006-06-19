@@ -7,13 +7,11 @@ plan tests => 10;
 
 use FindBin;
 use lib "$FindBin::Bin/lib";
+require Path::Class;
 
 
 $ENV{MODEL_FILE_DIR} = $FindBin::Bin . '/store';
-{
-    require Path::Class;
-    Path::Class::dir($ENV{MODEL_FILE_DIR})->rmtree;
-}
+Path::Class::dir($ENV{MODEL_FILE_DIR})->rmtree;
 
 use_ok('Catalyst::Model::File');
 use_ok('TestApp');
@@ -32,7 +30,7 @@ my $model = TestApp->model('File');
 
 $model->cd('sub', 'dir');
 
-is('/sub/dir', $model->pwd, "pwd is correct");
+is(Path::Class::dir('/sub/dir'), $model->pwd, "pwd is correct");
 
 is_deeply([
         Path::Class::file('file.txt')
@@ -42,11 +40,11 @@ is_deeply([
 
 $model->cd('..', 'foo');
 
-is('/sub/foo', $model->pwd, "pwd right after cd('..')");
+is(Path::Class::dir('/sub/foo'), $model->pwd, "pwd right after cd('..')");
 
-is('/sub', $model->parent->pwd, "Parent right");
-is('/', $model->parent->pwd, "Parent right");
-is('/', $model->parent->pwd, "Parent doesn't go out of root");
+is(Path::Class::dir('/sub'), $model->parent->pwd, "Parent right");
+is(Path::Class::dir('/'), $model->parent->pwd, "Parent right");
+is(Path::Class::dir('/'), $model->parent->pwd, "Parent doesn't go out of root");
 
 is_deeply([
         Path::Class::file('sub/dir/file.txt')
