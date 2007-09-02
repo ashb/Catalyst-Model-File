@@ -59,6 +59,7 @@ sub new {
     return $self;
 }
 
+
 =head2 list
 
 Returns a list of files (and/or directories) found under the current working 
@@ -78,7 +79,6 @@ change from OS to OS.
 =cut
 
 sub list {
-    $DB::single = 1;
     my ($self, %opt) = @_;
     my @files;
     $opt{mode} ||= 'files';
@@ -101,11 +101,10 @@ sub list {
 
     return @files if $opt{dir} && $opt{file};
 
-    my $meth = $opt{dir} ? 'is_dir' : 'is_file';
+    return $opt{dir} ?
+      grep { $_->is_dir } @files :
+      grep { !$_->is_dir } @files;
 
-    return map { $_->relative($self->{_dir}) } 
-        grep { $_->is_dir && $opt{dir} || !$_->is_dir && $opt{file}
-        } @files;
 }
 
 =head2 change_dir
@@ -120,7 +119,6 @@ sub cd { shift->change_dir(@_) }
 
 
 sub change_dir {
-    $DB::single = 1;
     my $self = shift;
 
     my $dir = shift;

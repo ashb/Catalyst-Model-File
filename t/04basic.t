@@ -3,7 +3,7 @@ use warnings;
 
 use Test::More;
 
-plan tests => 12;
+plan tests => 14;
 
 use FindBin;
 use lib "$FindBin::Bin/lib";
@@ -31,12 +31,12 @@ for my $file (@files) {
 
 my $model = TestApp->model('File');
 
-ok($model);
+ok($model, 'Model ok');
 
-is_deeply(\@files, [ $model->list], 'List matches');
+is_deeply([ sort $model->list], \@files, 'List matches');
 
 for my $file (@files) {
-    is($file, $model->slurp($file), 'slurp okay');
+    is($model->slurp($file), $file, 'slurp okay');
 }
 
 # Slurp/Splat tests
@@ -49,8 +49,8 @@ for my $file (@files) {
     my (@lines) = <FILE>;
     close FILE;
     is_deeply([$string], \@lines, 'splat works');
- 
-    is($string, $model->slurp($file), 'slurp works');
+
+    is($model->slurp($file), $string, 'slurp works');
 }
 
 # Subdir test
@@ -59,17 +59,35 @@ for my $file (@files) {
     $model->splat($file, $file);
 
     my $file_obj = $model->file($file);
-    
 
     ok($file_obj->stat, 'File in sub directory created');
-    is($file, $file_obj->slurp, "contents are right");
+    is($file_obj->slurp, $file, "File contents are right");
 }
 
-is_deeply([
-    Path::Class::file('file3'),
-    Path::Class::file('foo1'),
-    Path::Class::file('foo2'),
-    Path::Class::dir('sub'),
-,], [sort $model->list(recurse => 0, mode => 'both')], "List without recurse is right");
+@files = (Path::Class::file('file3'),
+          Path::Class::file('foo1'),
+          Path::Class::file('foo2'));
+my @dirs = (Path::Class::dir('sub'));
+my @both = (@files, @dirs);
+
+$model->cd('/');
+# mode => 'both' test
+{
+    my @result = sort $model->list(recurse => 0, mode => 'both');
+    is_deeply(\@result, \@both, 'List of dirs & files matches');
+}
+
+# mode => 'dir' test
+{
+    my @result = sort $model->list(recurse => 0, mode => 'dirs');
+    is_deeply(\@result, \@dirs, 'List of dirs matches');
+}
+
+# mode => 'file' test
+{
+    my @result = sort $model->list(recurse => 0, mode => 'files');
+    is_deeply(\@result, \@files, 'List of files matches');
+}
+
 
 $model->{root_dir}->rmtree;
