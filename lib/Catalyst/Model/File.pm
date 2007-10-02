@@ -1,9 +1,9 @@
 package Catalyst::Model::File;
 
-use strict;
-use warnings;
+use Moose;
+extends 'Catalyst::Model';
+with 'Catalyst::Component::InstancePerContext';
 
-use base qw/Catalyst::Model/;
 use NEXT;
 use Carp;
 
@@ -11,7 +11,7 @@ use IO::Dir;
 use Path::Class ();
 use IO::File;
 
-our $VERSION = 0.02;
+our $VERSION = 0.06;
 
 =head1 NAME
 
@@ -59,6 +59,13 @@ sub new {
     return $self;
 }
 
+sub build_per_context_instance {
+  my ($self, $c) = @_;
+
+  $self->cd('/');
+
+  return $self;
+}
 
 =head2 list
 
@@ -190,7 +197,7 @@ sub parent {
 
 =head2 $self->file($file)
 
-Returns an L<Class::Path::File> object of $file (which can be a string or a Class::Path::File object,) or undef if the file is an invalid path - i.e. outside the directory structure specified in the config.
+Returns an L<Path::Class::File> object of $file (which can be a string or a Class::Path::File object,) or undef if the file is an invalid path - i.e. outside the directory structure specified in the config.
 
 =cut
 

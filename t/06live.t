@@ -18,7 +18,5 @@ use Data::Dumper;
 
 my $res = request('http://localhost/cd');
 is $res->content, '/foo';
-sleep 2;
-local $TODO = "work out how to fix this";
 $res = request('http://localhost/pwd');
 is $res->content, '/';

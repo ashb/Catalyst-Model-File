@@ -24,7 +24,7 @@
 \#$
 \b\.#
 ^\.DS_Store$
-/\..*?\.swp$
+\..*?\.swp$
 
 # Avoid Apache::Test files
 t/conf/apache_test_config.pm
