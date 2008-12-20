@@ -1,3 +1,7 @@
-0.07 -
+
+0.08 -
+  Fix Win32 test failures by forcing stringifies to Unix output format
+
+0.07 - 2008/12/17
 + Make the return from list stringify relative to cwd, but make operations 
   (open, stat, etc.) work on the actual file

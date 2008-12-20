@@ -126,7 +126,7 @@ sub _rebless {
     bless $entity, 'Catalyst::Model::File::File';
   }
 
-  $entity->{stringify_as} = $entity->relative($self->{_dir})->stringify;
+  $entity->{stringify_as} = $entity->relative($self->{_dir})->as_foreign('Unix')->stringify;
   return $entity;
 }
 
@@ -187,7 +187,7 @@ Get the current working directory, from which all relative paths are based.
 sub pwd { shift->directory(@_) }
 
 sub directory {
-    return shift->{directory};
+    return shift->{directory}->as_foreign('Unix');
 }
 
 =head2 parent
