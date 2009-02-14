@@ -11,7 +11,7 @@ use IO::Dir;
 use Path::Class ();
 use IO::File;
 
-our $VERSION = 0.07;
+our $VERSION = 0.08;
 
 =head1 NAME
 
@@ -41,7 +41,7 @@ Simple file based storage model for Catalyst.
 =cut
 
 sub new {
-    my $self = shift->NEXT::new(@_);
+    my $self = shift->next::method(@_);
 
     croak "->config->{root_dir} must be defined for this model"
         unless $self->{root_dir};
