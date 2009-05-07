@@ -1,4 +1,4 @@
-use inc::Module::Install;
+use inc::Module::Install 0.87;
 
 name            'Catalyst-Model-File';
 all_from        'lib/Catalyst/Model/File.pm';
