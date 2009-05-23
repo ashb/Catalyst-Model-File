@@ -11,4 +11,6 @@ build_requires  'Test::More';
 
 no_index        directory => 't/lib';
 
+resources repository => 'http://dev.catalyst.perl.org/repos/Catalyst/trunk/Catalyst-Model-File/';
+
 WriteAll;
