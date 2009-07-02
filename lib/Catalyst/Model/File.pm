@@ -4,7 +4,9 @@ use Moose;
 extends 'Catalyst::Model';
 with 'Catalyst::Component::InstancePerContext';
 
-use NEXT;
+no Moose;
+
+use MRO::Compat;
 use Carp;
 
 use IO::Dir;
