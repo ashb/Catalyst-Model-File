@@ -1,4 +1,7 @@
 
+  - Port to being a proper Moose class, making proper attributes
+    and removing constructor.
+
 0.08 - 2009/07/02
   Use next::method for method re-dispatch instead of NEXT
   Fix Win32 test failures by forcing stringifies to Unix output format
