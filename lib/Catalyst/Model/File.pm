@@ -15,7 +15,7 @@ use IO::Dir;
 use Path::Class ();
 use IO::File;
 
-our $VERSION = 0.08;
+our $VERSION = 0.09;
 
 =head1 NAME
 
