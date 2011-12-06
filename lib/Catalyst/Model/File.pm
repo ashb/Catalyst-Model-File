@@ -1,14 +1,16 @@
 package Catalyst::Model::File;
 
 use Moose;
+use namespace::autoclean;
+
 extends 'Catalyst::Model';
 with 'Catalyst::Component::InstancePerContext';
 
-no Moose;
 
 use MRO::Compat;
 use Carp;
-
+use MooseX::Types::Path::Class qw/ Dir /;
+use MooseX::Types::Moose qw/ Str /;
 use IO::Dir;
 use Path::Class ();
 use IO::File;
@@ -30,7 +32,9 @@ Catalyst::Model::File - File based storage model for Catalyst.
         name          => 'MyApp',
         root          => MyApp->path_to('root'),
         'Model::File' => {
-            directory => MyApp->path_to('file_store')
+            root_dir => MyApp->path_to('file_store')
+        },
+    );
 
 Simple file based storage model for Catalyst.
 
@@ -38,27 +42,38 @@ Simple file based storage model for Catalyst.
 
 =head1 METHODS
 
-=head2 new
-
 =cut
 
-sub new {
-    my $self = shift->next::method(@_);
+has root_dir => (
+    isa => Dir,
+    is => 'ro',
+    coerce => 1,
+    required => 1,
+);
 
-    croak "->config->{root_dir} must be defined for this model"
-        unless $self->{root_dir};
+has _dir => (
+    isa => Dir,
+    is => 'rw',
+    lazy => 1,
+    default => sub { shift()->root_dir },
+    clearer => '_clear_dir',
+);
 
-    unless (ref $self->{root_dir} ) {
-        # If a string is provided turn into a Path::Class
-        $self->{root_dir} = Path::Class::dir($self->{root_dir})
-    }
+has dir_create_mask => (
+    isa => Str,
+    is => 'ro',
+    default => '0775',
+);
 
-    $self->{dir_create_mask} ||= 0775;
-    $self->{root_dir}->mkpath(0, $self->{dir_mask});
-    $self->{directory} = Path::Class::dir('/');
-    $self->{_dir} = $self->{root_dir};
+has _directory => (
+    isa => Dir,
+    is => 'rw',
+    default => sub { Path::Class::dir('/') },
+);
 
-    return $self;
+sub BUILD {
+    my $self = shift;
+    mkdir($self->root_dir, oct($self->dir_create_mask));
 }
 
 sub build_per_context_instance {
@@ -98,7 +113,7 @@ sub list {
     $opt{file} = 1 if $opt{mode} =~ /^both|files$/;
 
     if ($opt{recurse}) {
-        $self->{_dir}->recurse(callback => sub {
+        $self->_dir->recurse(callback => sub {
             my ($entry) = @_;
             push @files, $entry
                 if !$entry->is_dir && $opt{file} 
@@ -107,7 +122,7 @@ sub list {
         return map { $self->_rebless($_) } @files;
     }
 
-    @files = map { $self->_rebless($_) } $self->{_dir}->children;
+    @files = map { $self->_rebless($_) } $self->_dir->children;
 
     return @files if $opt{dir} && $opt{file};
 
@@ -120,7 +135,7 @@ sub list {
 sub _rebless {
   my ($self, $entity) = @_;
 
-  $entity = $entity->absolute($self->{root_dir});
+  $entity = $entity->absolute($self->root_dir);
   if ($entity->is_dir) {
     bless $entity, 'Catalyst::Model::File::Dir';
   }
@@ -128,7 +143,7 @@ sub _rebless {
     bless $entity, 'Catalyst::Model::File::File';
   }
 
-  $entity->{stringify_as} = $entity->relative($self->{_dir})->as_foreign('Unix')->stringify;
+  $entity->{stringify_as} = $entity->relative($self->_dir)->as_foreign('Unix')->stringify;
   return $entity;
 }
 
@@ -153,27 +168,26 @@ sub change_dir {
     $dir = Path::Class::dir($dir, @_) unless ref $dir;
 
     my @dir_list = ();
-    $self->{directory} = Path::Class::dir('');
+    $self->_directory(Path::Class::dir(''));
 
     if ($dir->is_absolute) {
-        $self->{_dir} = $self->{root_dir};
+        $self->_clear_dir;
         @dir_list = $dir->dir_list(1);
     } else {
-        $dir = $self->{_dir}->subdir($dir);
-        $self->{_dir} = $self->{root_dir};
-        return $self unless ($self->{root_dir}->subsumes($dir) );
-        
+        $dir = $self->_dir->subdir($dir);
+        $self->_clear_dir;
+        return $self unless ($self->root_dir->subsumes($dir) );
+
         @dir_list = $dir->relative($self->{root_dir})->dir_list;
     }
-    
 
-#    $self->{directory} = $self->{directory}->subdir(@dir_list);
+#    $self->_directory($self->_directory->subdir(@dir_list));
     foreach my $subdir (@dir_list) {
-        $self->{_dir} = $self->{_dir}->subdir($subdir) unless $subdir eq '..';
-        $self->{_dir} = $self->{_dir}->parent if $subdir eq '..';
+        $self->_dir($self->_dir->subdir($subdir)) unless $subdir eq '..';
+        $self->_dir($self->_dir->parent) if $subdir eq '..';
     }
 
-    $self->{directory} = $self->{_dir}->relative($self->{root_dir})->absolute('/');
+    $self->_directory($self->_dir->relative($self->root_dir)->absolute('/'));
 
     return $self;
 }
@@ -189,7 +203,7 @@ Get the current working directory, from which all relative paths are based.
 sub pwd { shift->directory(@_) }
 
 sub directory {
-    return shift->{directory}->as_foreign('Unix');
+    return shift->_directory->as_foreign('Unix');
 }
 
 =head2 parent
@@ -201,14 +215,14 @@ Move up to the parent of the working directory. Returns $self.
 sub parent {
     my ($self) = @_;
 
-    $self->{_dir} = $self->{_dir}->parent;
+    $self->_dir($self->_dir->parent);
 
-    unless ($self->{root_dir}->subsumes($self->{_dir})) {
-        $self->{_dir} = $self->{root_dir};
+    unless ($self->root_dir->subsumes($self->_dir)) {
+        $self->_clear_dir;
         return $self;
     }
 
-    $self->{directory} = $self->{_dir}->relative($self->{root_dir})->absolute('/');
+    $self->_directory($self->_dir->relative($self->root_dir)->absolute('/'));
 
     return $self;
 }
@@ -226,14 +240,14 @@ sub file {
 
     return unless $file;
 
-    $file = (ref $file ? $file : Path::Class::file($file) )->absolute($self->{_dir});
+    $file = (ref $file ? $file : Path::Class::file($file) )->absolute($self->_dir);
 
-    return undef unless $self->{root_dir}->subsumes($file);
+    return undef unless $self->root_dir->subsumes($file);
 
     # Make sure the dir tree exists
-    $file->dir->mkpath(0, $self->{dir_create_mask});
+    $file->dir->mkpath(0, oct($self->dir_create_mask));
     return $file;
-    
+
 }
 
 =head2 $self->slurp($file)
@@ -329,4 +343,6 @@ it under the same terms as Perl itself.
 
 =cut
 
+__PACKAGE__->meta->make_immutable;
 1;
+
