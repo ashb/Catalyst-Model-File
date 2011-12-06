@@ -24,7 +24,7 @@ ok(-d $ENV{MODEL_FILE_DIR}, 'Store directory exists');
 my @files = (qw(foo1 foo2));
 
 for my $file (@files) {
-    open FILE, '>>', $ENV{MODEL_FILE_DIR} . '/' .$file;
+    open FILE, '>>', $ENV{MODEL_FILE_DIR} . '/' .$file or die "$! for $ENV{MODEL_FILE_DIR}/$file";
     print FILE $file;
     close FILE;
 }
