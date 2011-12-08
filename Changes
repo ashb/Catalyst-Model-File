@@ -1,3 +1,7 @@
+Changes fpr Catalyst::Model::Files
+
+0.10 - 2011/12/06
+  - Unbork tests (thanks richardc)
 
 0.09 - 2011/12/06
   - Port to being a proper Moose class, making proper attributes
