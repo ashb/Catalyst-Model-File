@@ -285,6 +285,8 @@ sub splat {
     $file->openw->print(@_);
 }
 
+__PACKAGE__->meta->make_immutable;
+
 package #
    Catalyst::Model::File::File;
 use base 'Path::Class::File';
@@ -343,6 +345,5 @@ it under the same terms as Perl itself.
 
 =cut
 
-__PACKAGE__->meta->make_immutable;
 1;
 
